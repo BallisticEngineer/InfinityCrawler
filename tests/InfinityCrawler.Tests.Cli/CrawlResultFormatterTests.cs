@@ -152,6 +152,82 @@ namespace InfinityCrawler.Tests.Cli
 			Assert.AreEqual("[301] http://example.com/ducks/old.html", lines[1]);
 		}
 
+		[TestMethod]
+		public void UrlLinesContainOnlyBareUrls()
+		{
+			var results = new[]
+			{
+				CreateResult("http://example.com/ducks/mallard.html"),
+				CreateResult("http://example.com/ducks/", CrawlStatus.RobotsBlocked),
+				CreateResult("http://example.com/ducks/private.html", CrawlStatus.Crawled,
+					requestStatusCodes: new HttpStatusCode?[] { HttpStatusCode.Forbidden })
+			};
+
+			var lines = CrawlResultFormatter.FormatUrlLines(results).ToArray();
+
+			CollectionAssert.AreEqual(new[]
+			{
+				"http://example.com/ducks/",
+				"http://example.com/ducks/mallard.html",
+				"http://example.com/ducks/private.html"
+			}, lines);
+			Assert.IsFalse(lines.Any(line => line.Contains("[")));
+			Assert.IsFalse(lines.Any(line => line.Contains("]")));
+		}
+
+		[TestMethod]
+		public void UrlLinesMatchStatusLineInventoryAfterPrefixRemoval()
+		{
+			var results = new[]
+			{
+				CreateResult("http://example.com/z.html"),
+				CreateResult("http://example.com/B.html"),
+				CreateResult("http://example.com/m.html"),
+				CreateResult("http://example.com/a.html"),
+				CreateResult("http://example.com/ducks/index.html", CrawlStatus.RobotsBlocked)
+			};
+
+			var statusLines = CrawlResultFormatter.FormatResultLines(results).ToArray();
+			var urlLines = CrawlResultFormatter.FormatUrlLines(results).ToArray();
+
+			var strippedStatusLines = statusLines
+				.Select(line => line.Substring(line.IndexOf("] ") + 2))
+				.ToArray();
+			CollectionAssert.AreEqual(strippedStatusLines, urlLines);
+		}
+
+		[TestMethod]
+		public void RedirectSourceUrisAreEnumeratedInUrlLines()
+		{
+			var result = CreateResult("http://example.com/ducks/new.html",
+				requestStatusCodes: new HttpStatusCode?[] { HttpStatusCode.OK },
+				redirectChain: new[]
+				{
+					CreateRedirect("http://example.com/ducks/old.html", HttpStatusCode.MovedPermanently)
+				});
+
+			var lines = CrawlResultFormatter.FormatUrlLines(new[] { result }).ToArray();
+
+			CollectionAssert.AreEqual(new[]
+			{
+				"http://example.com/ducks/new.html",
+				"http://example.com/ducks/old.html"
+			}, lines);
+		}
+
+		[TestMethod]
+		public void FallbackLabelOmittedButUrlKeptInUrlLines()
+		{
+			var result = CreateResult("http://example.com/ducks/", CrawlStatus.MaxRetries,
+				requestStatusCodes: new HttpStatusCode?[] { null });
+
+			var lines = CrawlResultFormatter.FormatUrlLines(new[] { result }).ToArray();
+
+			CollectionAssert.AreEqual(new[] { "http://example.com/ducks/" }, lines);
+			Assert.IsFalse(lines.Any(line => line.Contains("MAX-RETRIES")));
+			Assert.IsFalse(lines.Any(line => line.Contains("ROBOTS")));
+		}
+
 		private static CrawledUri CreateResult(string location, CrawlStatus status = CrawlStatus.Crawled, HttpStatusCode?[] requestStatusCodes = null, IEnumerable<CrawledUriRedirect> redirectChain = null)
 		{
 			var requests = requestStatusCodes ?? (status == CrawlStatus.Crawled ?

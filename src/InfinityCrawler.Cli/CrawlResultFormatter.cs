@@ -9,14 +9,14 @@ namespace InfinityCrawler.Cli
 	{
 		public static IEnumerable<string> FormatResultLines(IEnumerable<CrawledUri> results)
 		{
-			return results
-				.SelectMany(GetResultEntries)
-				.GroupBy(entry => entry.Location.ToString(), StringComparer.Ordinal)
-				.Select(group => group
-					.OrderBy(entry => entry.FinalStatusCode.HasValue ? 0 : 1)
-					.First())
-				.OrderBy(entry => entry.Location.ToString(), StringComparer.Ordinal)
+			return PrepareEntries(results)
 				.Select(FormatResultEntry);
+		}
+
+		public static IEnumerable<string> FormatUrlLines(IEnumerable<CrawledUri> results)
+		{
+			return PrepareEntries(results)
+				.Select(entry => entry.Location.ToString());
 		}
 
 		public static string FormatResultLine(CrawledUri result)
@@ -43,6 +43,17 @@ namespace InfinityCrawler.Cli
 				default:
 					return "CRAWLED";
 			}
+		}
+
+		private static IEnumerable<ResultEntry> PrepareEntries(IEnumerable<CrawledUri> results)
+		{
+			return results
+				.SelectMany(GetResultEntries)
+				.GroupBy(entry => entry.Location.ToString(), StringComparer.Ordinal)
+				.Select(group => group
+					.OrderBy(entry => entry.FinalStatusCode.HasValue ? 0 : 1)
+					.First())
+				.OrderBy(entry => entry.Location.ToString(), StringComparer.Ordinal);
 		}
 
 		private static IEnumerable<ResultEntry> GetResultEntries(CrawledUri result)

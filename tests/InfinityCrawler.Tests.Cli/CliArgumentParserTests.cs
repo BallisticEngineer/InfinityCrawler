@@ -16,6 +16,7 @@ namespace InfinityCrawler.Tests.Cli
 			Assert.IsNotNull(args.StartUri);
 			Assert.AreEqual("http://example.com/ducks/", args.StartUri.ToString());
 			Assert.IsNull(args.MaxPages);
+			Assert.IsNull(args.OutputPath);
 		}
 
 		[TestMethod]
@@ -157,6 +158,99 @@ namespace InfinityCrawler.Tests.Cli
 			var args = CliArgumentParser.Parse(new[] { "https://example.com/ducks/", "extra" });
 
 			Assert.IsTrue(args.HasError);
+		}
+
+		[TestMethod]
+		public void OutputValueParsedFromSpaceForm()
+		{
+			var args = CliArgumentParser.Parse(new[] { "https://example.com/ducks/", "--output", "urls.txt" });
+
+			Assert.IsFalse(args.HasError);
+			Assert.AreEqual("urls.txt", args.OutputPath);
+		}
+
+		[TestMethod]
+		public void OutputValueParsedFromEqualsForm()
+		{
+			var args = CliArgumentParser.Parse(new[] { "https://example.com/ducks/", "--output=urls.txt" });
+
+			Assert.IsFalse(args.HasError);
+			Assert.AreEqual("urls.txt", args.OutputPath);
+		}
+
+		[TestMethod]
+		public void OutputBeforeUrlIsParsed()
+		{
+			var args = CliArgumentParser.Parse(new[] { "--output", "out\\urls.txt", "https://example.com/ducks/" });
+
+			Assert.IsFalse(args.HasError);
+			Assert.AreEqual("out\\urls.txt", args.OutputPath);
+			Assert.AreEqual("https://example.com/ducks/", args.StartUri.ToString());
+		}
+
+		[TestMethod]
+		public void MissingOutputValueRejected()
+		{
+			var args = CliArgumentParser.Parse(new[] { "https://example.com/ducks/", "--output" });
+
+			Assert.IsTrue(args.HasError);
+		}
+
+		[TestMethod]
+		public void EmptyOutputEqualsValueRejected()
+		{
+			var args = CliArgumentParser.Parse(new[] { "https://example.com/ducks/", "--output=" });
+
+			Assert.IsTrue(args.HasError);
+		}
+
+		[TestMethod]
+		public void EmptyOutputSpaceValueRejected()
+		{
+			var args = CliArgumentParser.Parse(new[] { "https://example.com/ducks/", "--output", "" });
+
+			Assert.IsTrue(args.HasError);
+		}
+
+		[TestMethod]
+		public void RepeatedOutputSpaceFormRejected()
+		{
+			var args = CliArgumentParser.Parse(new[]
+			{
+				"https://example.com/ducks/",
+				"--output", "first.txt",
+				"--output", "second.txt"
+			});
+
+			Assert.IsTrue(args.HasError);
+		}
+
+		[TestMethod]
+		public void RepeatedOutputMixedFormsRejected()
+		{
+			var args = CliArgumentParser.Parse(new[]
+			{
+				"https://example.com/ducks/",
+				"--output=first.txt",
+				"--output", "second.txt"
+			});
+
+			Assert.IsTrue(args.HasError);
+		}
+
+		[TestMethod]
+		public void OutputCombinesWithMaxPages()
+		{
+			var args = CliArgumentParser.Parse(new[]
+			{
+				"https://example.com/ducks/",
+				"--max-pages", "10",
+				"--output", "urls.txt"
+			});
+
+			Assert.IsFalse(args.HasError);
+			Assert.AreEqual(10, args.MaxPages);
+			Assert.AreEqual("urls.txt", args.OutputPath);
 		}
 	}
 }

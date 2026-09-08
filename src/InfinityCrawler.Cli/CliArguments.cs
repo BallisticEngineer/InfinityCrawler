@@ -10,6 +10,8 @@ namespace InfinityCrawler.Cli
 
 		public int? MaxPages { get; private set; }
 
+		public string OutputPath { get; private set; }
+
 		public string Error { get; private set; }
 
 		public bool HasError
@@ -28,12 +30,13 @@ namespace InfinityCrawler.Cli
 			};
 		}
 
-		public static CliArguments ForRun(Uri startUri, int? maxPages)
+		public static CliArguments ForRun(Uri startUri, int? maxPages, string outputPath)
 		{
 			return new CliArguments
 			{
 				StartUri = startUri,
-				MaxPages = maxPages
+				MaxPages = maxPages,
+				OutputPath = outputPath
 			};
 		}
 

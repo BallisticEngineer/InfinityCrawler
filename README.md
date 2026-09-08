@@ -76,4 +76,7 @@ The executable is produced at `artifacts/publish/win-x64/InfinityCrawler.Cli.exe
 
 Options:
 - `--max-pages <number>` — limit the number of pages crawled.
+- `--output <file>` — write the discovered URLs to a plain text file, one URL per line (bare URLs, no status prefixes).
 - `--help` / `-h` — show help and exit.
+
+See [`docs/usage.md`](docs/usage.md) for the full usage guide, including path scope rules, output file semantics, exit codes, and practical examples.

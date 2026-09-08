@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using InfinityCrawler.Cli;
@@ -52,6 +53,50 @@ namespace InfinityCrawler.Tests.Cli
 			}
 			finally
 			{
+				testSiteManager.Dispose();
+			}
+		}
+
+		[TestMethod]
+		public async Task OutputFileMatchesConsoleInventory()
+		{
+			var testSiteManager = new TestSiteManager(new SiteContext
+			{
+				SiteFolder = "PathScopedSite"
+			});
+
+			var outputFilePath = Path.Combine(Path.GetTempPath(), "InfinityCrawler.UrlCrawlRunnerTests", $"{Guid.NewGuid():N}.txt");
+
+			try
+			{
+				var runner = new UrlCrawlRunner(testSiteManager.GetHttpClient());
+				var result = await runner.RunAsync(new Uri("http://localhost/ducks/"), null);
+
+				var statusLines = CrawlResultFormatter.FormatResultLines(result.CrawledUris).ToArray();
+				var urlLines = CrawlResultFormatter.FormatUrlLines(result.CrawledUris).ToArray();
+
+				UrlFileWriter.Write(urlLines, outputFilePath);
+
+				var fileLines = File.ReadAllLines(outputFilePath);
+
+				var strippedStatusLines = statusLines
+					.Select(line => line.Substring(line.IndexOf("] ") + 2))
+					.ToArray();
+				CollectionAssert.AreEqual(strippedStatusLines, fileLines);
+				CollectionAssert.AreEqual(urlLines, fileLines);
+				Assert.IsTrue(fileLines.Contains("http://localhost/ducks/redirect-destination.html"));
+				Assert.IsTrue(fileLines.Contains("http://localhost/ducks/redirect-to-destination"));
+				Assert.IsFalse(fileLines.Any(line => line.Contains("/geese/")));
+				Assert.IsFalse(fileLines.Any(line => line.Contains("[")));
+				StringAssert.StartsWith(File.ReadAllText(outputFilePath), "http://");
+			}
+			finally
+			{
+				if (File.Exists(outputFilePath))
+				{
+					File.Delete(outputFilePath);
+				}
+
 				testSiteManager.Dispose();
 			}
 		}

@@ -5,10 +5,12 @@ namespace InfinityCrawler.Cli
 	public static class CliArgumentParser
 	{
 		private const string MaxPagesPrefix = "--max-pages=";
+		private const string OutputPrefix = "--output=";
 
 		public static CliArguments Parse(string[] args)
 		{
 			var maxPages = (int?)null;
+			var outputPath = (string)null;
 			Uri startUri = null;
 
 			for (var i = 0; i < args.Length; i++)
@@ -50,6 +52,46 @@ namespace InfinityCrawler.Cli
 					continue;
 				}
 
+				if (arg == "--output")
+				{
+					if (outputPath != null)
+					{
+						return CliArguments.ForError("The '--output' option was specified more than once.");
+					}
+
+					if (i + 1 >= args.Length)
+					{
+						return CliArguments.ForError("Missing a value for the '--output' option.");
+					}
+
+					i++;
+					var outputResult = TryParseOutputValue(args[i]);
+					if (outputResult.Error != null)
+					{
+						return CliArguments.ForError(outputResult.Error);
+					}
+
+					outputPath = outputResult.OutputPath;
+					continue;
+				}
+
+				if (arg.StartsWith(OutputPrefix, StringComparison.Ordinal))
+				{
+					if (outputPath != null)
+					{
+						return CliArguments.ForError("The '--output' option was specified more than once.");
+					}
+
+					var outputResult = TryParseOutputValue(arg.Substring(OutputPrefix.Length));
+					if (outputResult.Error != null)
+					{
+						return CliArguments.ForError(outputResult.Error);
+					}
+
+					outputPath = outputResult.OutputPath;
+					continue;
+				}
+
 				if (arg.StartsWith("-", StringComparison.Ordinal))
 				{
 					return CliArguments.ForError($"Unknown option '{arg}'.");
@@ -71,7 +113,7 @@ namespace InfinityCrawler.Cli
 				return CliArguments.ForError("Missing the required start URL.");
 			}
 
-			return CliArguments.ForRun(startUri, maxPages);
+			return CliArguments.ForRun(startUri, maxPages, outputPath);
 		}
 
 		private static bool TryParseStartUri(string value, out Uri startUri)
@@ -103,9 +145,31 @@ namespace InfinityCrawler.Cli
 			};
 		}
 
+		private static OutputParseResult TryParseOutputValue(string value)
+		{
+			if (string.IsNullOrEmpty(value))
+			{
+				return new OutputParseResult
+				{
+					Error = "Missing a file path for the '--output' option."
+				};
+			}
+
+			return new OutputParseResult
+			{
+				OutputPath = value
+			};
+		}
+
 		private class MaxPagesParseResult
 		{
 			public int? MaxPages { get; set; }
+			public string Error { get; set; }
+		}
+
+		private class OutputParseResult
+		{
+			public string OutputPath { get; set; }
 			public string Error { get; set; }
 		}
 	}
