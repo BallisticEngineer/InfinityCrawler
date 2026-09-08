@@ -57,3 +57,23 @@ var result = await crawler.Crawl(new Uri("http://example.org/"), new CrawlSettin
 	}
 });
 ```
+
+## Windows Publishable Utility (InfinityCrawler.Cli)
+
+A scoped-crawl command line utility. The published executable is self-contained, single-file, and runs on Windows x64 without requiring the .NET runtime to be installed.
+
+Publish on Windows from the repository root:
+
+```powershell
+.\publish-win-x64.ps1
+```
+
+The executable is produced at `artifacts/publish/win-x64/InfinityCrawler.Cli.exe`. Basic invocation:
+
+```powershell
+.\artifacts\publish\win-x64\InfinityCrawler.Cli.exe https://example.com/ducks/
+```
+
+Options:
+- `--max-pages <number>` — limit the number of pages crawled.
+- `--help` / `-h` — show help and exit.

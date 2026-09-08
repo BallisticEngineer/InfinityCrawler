@@ -52,6 +52,18 @@ namespace InfinityCrawler.Tests.TestSite.Controllers
 			return RedirectToAction("Redirect", new { depth = depth - 1, path });
 		}
 
+		[Route("ducks/redirect-to-destination")]
+		public IActionResult RedirectToScopedDestination()
+		{
+			return Redirect("/ducks/redirect-destination.html");
+		}
+
+		[Route("ducks/redirect-to-geese")]
+		public IActionResult RedirectToGeese()
+		{
+			return Redirect("/geese/index.html");
+		}
+
 		[Route("sitemap.xml")]
 		public IActionResult DynamicSitemap()
 		{

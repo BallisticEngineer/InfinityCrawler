@@ -29,7 +29,9 @@ namespace InfinityCrawler.Internal
 		private ConcurrentDictionary<Uri, byte> SeenUris { get; } = new ConcurrentDictionary<Uri, byte>();
 		private ConcurrentBag<CrawledUri> CrawledUris { get; } = new ConcurrentBag<CrawledUri>();
 
-		public CrawlRunner(Uri baseUri, RobotsFile robotsFile, HttpClient httpClient, CrawlSettings crawlSettings, ILogger logger = null)
+		private string PathScope { get; set; }
+
+		public CrawlRunner(Uri baseUri, RobotsFile robotsFile, HttpClient httpClient, CrawlSettings crawlSettings, ILogger logger = null, Uri startingUri = null)
 		{
 			BaseUri = baseUri;
 			RobotsFile = robotsFile;
@@ -39,7 +41,29 @@ namespace InfinityCrawler.Internal
 			Logger = logger;
 			RobotsPageParser = new RobotsPageParser();
 
+			if (crawlSettings.RestrictCrawlToStartingPath)
+			{
+				PathScope = GetPathScope(startingUri ?? baseUri);
+			}
+
 			AddRequest(baseUri);
+		}
+
+		private static string GetPathScope(Uri startingUri)
+		{
+			var path = startingUri.AbsolutePath;
+			return path.EndsWith("/") ? path : path + "/";
+		}
+
+		private bool IsInPathScope(string requestPath)
+		{
+			if (requestPath.Equals(PathScope, StringComparison.Ordinal) ||
+				requestPath.Equals(PathScope.TrimEnd('/'), StringComparison.Ordinal))
+			{
+				return true;
+			}
+
+			return requestPath.StartsWith(PathScope, StringComparison.Ordinal);
 		}
 		
 		private Uri StripFragment(Uri uri)
@@ -149,6 +173,16 @@ namespace InfinityCrawler.Internal
 			{
 				Logger?.LogDebug($"Request containing host {requestUri.Host} doesn't match the base host. This request will be ignored.");
 				return;
+			}
+
+			if (PathScope != null)
+			{
+				var requestPath = requestUri.AbsolutePath;
+				if (!IsInPathScope(requestPath))
+				{
+					Logger?.LogDebug($"Request containing path {requestPath} is outside the configured starting path scope ({PathScope}). This request will be ignored.");
+					return;
+				}
 			}
 
 			if (!skipMaxPageCheck && Settings.MaxNumberOfPagesToCrawl > 0)

@@ -14,6 +14,7 @@ namespace InfinityCrawler
 		public int NumberOfRetries { get; set; } = 3;
 		public int MaxNumberOfRedirects { get; set; } = 3;
 		public int MaxNumberOfPagesToCrawl { get; set; }
+		public bool RestrictCrawlToStartingPath { get; set; }
 
 		public IContentProcessor ContentProcessor { get; set; } = new DefaultContentProcessor();
 		public IRequestProcessor RequestProcessor { get; set; } = new DefaultRequestProcessor();

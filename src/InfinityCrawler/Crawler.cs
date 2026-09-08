@@ -50,7 +50,13 @@ namespace InfinityCrawler
 
 			UpdateCrawlDelay(robotsFile, settings.UserAgent, settings.RequestProcessorOptions);
 
-			var crawlRunner = new CrawlRunner(baseUri, robotsFile, HttpClient, settings, Logger);
+			var crawlRunner = new CrawlRunner(baseUri, robotsFile, HttpClient, settings, Logger, siteUri);
+
+			//Crawl the starting URI directly so the start of the configured scope is always included
+			if (settings.RestrictCrawlToStartingPath)
+			{
+				crawlRunner.AddRequest(siteUri);
+			}
 
 			//Use any links referred to by the sitemap as a starting point
 			var urisFromSitemap = (await new SitemapQuery(HttpClient)

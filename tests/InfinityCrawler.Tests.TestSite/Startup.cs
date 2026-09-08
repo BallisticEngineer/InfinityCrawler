@@ -22,10 +22,16 @@ namespace InfinityCrawler.Tests.TestSite
 
 		public void Configure(IApplicationBuilder app)
 		{
+			var staticFileProvider = new PhysicalFileProvider(
+				Path.Combine(Directory.GetCurrentDirectory(), $"Resources/{Context.SiteFolder}"));
+
+			app.UseDefaultFiles(new DefaultFilesOptions
+			{
+				FileProvider = staticFileProvider
+			});
 			app.UseStaticFiles(new StaticFileOptions
 			{
-				FileProvider = new PhysicalFileProvider(
-					Path.Combine(Directory.GetCurrentDirectory(), $"Resources/{Context.SiteFolder}"))
+				FileProvider = staticFileProvider
 			});
 
 #if NET6_0_OR_GREATER
