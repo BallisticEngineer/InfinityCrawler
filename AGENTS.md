@@ -1,5 +1,7 @@
 # AGENTS.md
 
+Reusable agent standards: [[Procedures/AGENT-GUIDE/README]]. This file remains authoritative for InfinityCrawler build/test and architecture notes.
+
 .NET web-crawler library (`InfinityCrawler`, `src/`) with an MSTest suite (`tests/`). The library targets `netstandard2.0;net6.0`. Upstream: github.com/TurnerSoftware/InfinityCrawler.
 
 ## Build & test on this machine
@@ -11,11 +13,11 @@ dotnet build InfinityCrawler.sln
 dotnet test tests/InfinityCrawler.Tests
 ```
 
-`InfinityCrawler.Tests` multi-targets `net461;netcoreapp3.1;net5.0;net6.0`. `dotnet test` runs all of them; netcoreapp3.1/net5.0/net6.0 pass, **net461 tests fail at runtime** — a pre-existing repo bug (restore copies `Microsoft.Bcl.AsyncInterfaces` 6.0.0 but the net461 build binds to 1.0.0.0 with no redirect). Verify with `-f net6.0` when you don't need the matrix.
+`InfinityCrawler.Tests` multi-targets `net461;netcoreapp3.1;net5.0;net6.0`. `dotnet test` runs all of them; netcoreapp3.1/net5.0/net6.0 pass, **net461 tests fail at runtime** - a pre-existing repo bug (restore copies `Microsoft.Bcl.AsyncInterfaces` 6.0.0 but the net461 build binds to 1.0.0.0 with no redirect). Verify with `-f net6.0` when you don't need the matrix.
 
 - Tests are MSTest (`[TestClass]`/`[TestMethod]`), not xUnit/NUnit.
 - `NETSDK1138` (net6.0 out of support) warnings are expected.
-- If this repo is ever opened on a machine with only .NET 8/10 runtimes: `TurnerSoftware.BuildVersioning` 0.4.0 (in `src/Directory.Build.props`) hard-fails (`Build versioning failed. Installed .NET runtimes incompatible with Build Versioning.`). Workaround — both props required, `SkipBuildVersioning` alone is not enough because the versioning `DetectBuildVersioningToolRuntime` target runs unconditionally:
+- If this repo is ever opened on a machine with only .NET 8/10 runtimes: `TurnerSoftware.BuildVersioning` 0.4.0 (in `src/Directory.Build.props`) hard-fails (`Build versioning failed. Installed .NET runtimes incompatible with Build Versioning.`). Workaround - both props required, `SkipBuildVersioning` alone is not enough because the versioning `DetectBuildVersioningToolRuntime` target runs unconditionally:
   ```powershell
   dotnet build InfinityCrawler.sln /p:SkipBuildVersioning=true /p:_BuildVersioningToolRuntime=net6.0
   ```
@@ -24,13 +26,13 @@ dotnet test tests/InfinityCrawler.Tests
 
 - `Crawler.Crawl(Uri, CrawlSettings)` is the only public entry point: fetch robots.txt → seed from sitemap.xml → `Internal/CrawlRunner` (internal) crawls in parallel, strips fragments for dedupe, applies robots rules via `RobotsPageParser`, honors `MaxNumberOfPagesToCrawl`.
 - `CrawlSettings` composes the two extension points via `ContentProcessor` and `RequestProcessor`:
-  - `Processing/Content/DefaultContentProcessor` — HtmlAgilityPack; links, canonical URL, `<meta name="robots">`.
-  - `Processing/Requests/DefaultRequestProcessor` — retries, redirects, auto-throttling.
+  - `Processing/Content/DefaultContentProcessor` - HtmlAgilityPack; links, canonical URL, `<meta name="robots">`.
+  - `Processing/Requests/DefaultRequestProcessor` - retries, redirects, auto-throttling.
 - Package deps: `HtmlAgilityPack`, `TurnerSoftware.RobotsExclusionTools`, `TurnerSoftware.SitemapTools`.
 
 ## Testing conventions
 
-- `tests/InfinityCrawler.Tests.TestSite` serves fixtures from an in-process ASP.NET Core `TestServer` (`TestHttpMessageHandler`) at `http://localhost/` — no external network or mocking framework.
+- `tests/InfinityCrawler.Tests.TestSite` serves fixtures from an in-process ASP.NET Core `TestServer` (`TestHttpMessageHandler`) at `http://localhost/` - no external network or mocking framework.
 - To crawl a new page: add fixtures under `tests/InfinityCrawler.Tests.TestSite/Resources/<Folder>/` (HTML + `robots.txt`), then construct `new SiteContext { SiteFolder = "<Folder>" }` and crawl `http://localhost/`.
 - Use `CrawlerTestBase.GetNoDelayRequestProcessorOptions()` for fast tests (zero delay/jitter/throttle) and `GetTestSiteCrawler(siteContext)` for the client.
 

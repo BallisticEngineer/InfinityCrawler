@@ -197,6 +197,12 @@ The crawl scope is derived from the path of the starting URL, using subtree sema
 - **Fragments** (`#anchors`) are stripped for deduplication, so `page.html#intro` and `page.html#details` count as one URL.
 - The starting URL itself is always included in the crawl, so the scope root is never skipped even if nothing links to it.
 
+### Start URL resolution base
+
+Relative links on a page resolve against that page's URL. When you start at a **trailing-slash** URL such as `https://example.com/post_64996/` (one path segment, no file extension), the crawler checks whether the site also serves the identical page — the same discoverable link structure — at the bare form `https://example.com/post_64996` without a redirect. If it does, relative links from that start page are resolved against the **bare form** instead, which is what a browser viewing the page at either address produces. This avoids malformed nested URLs such as `https://example.com/post_64996/post_65113` when the site truly exposes `https://example.com/post_65113`.
+
+The emitted/crawled starting URL is still the one you supplied (the trailing-slash form); only how the start page's relative links resolve is affected.
+
 ## 10. Redirects and Statuses
 
 The normal console output preserves useful status information:
