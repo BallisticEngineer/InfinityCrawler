@@ -1,0 +1,72 @@
+name: Security Scans (Semgrep and Trivy)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    name: Semgrep CE (source code)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: semgrep/semgrep:1.183.0
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Scan source code
+        run: semgrep scan --config=p/default --metrics=off --json --output=semgrep.json .
+
+      - name: Publish Semgrep findings to Actions summary
+        if: always()
+        run: python3 .github/scripts/security_report.py semgrep semgrep.json
+
+      - name: Upload findings
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: semgrep-findings
+          path: semgrep.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  trivy:
+    name: Trivy (dependencies, configuration, secrets)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+
+      - name: Scan repository filesystem
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig,secret
+          format: json
+          output: trivy.json
+          exit-code: '0'
+
+      - name: Publish Trivy findings to Actions summary
+        if: always()
+        run: python3 .github/scripts/security_report.py trivy trivy.json
+
+      - name: Upload findings
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: trivy-findings
+          path: trivy.json
+          if-no-files-found: warn
+          retention-days: 7
