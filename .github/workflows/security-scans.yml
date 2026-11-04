@@ -1,0 +1,64 @@
+name: Security Scans (Semgrep and Trivy)
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  semgrep:
+    name: Semgrep CE (source code)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    container:
+      image: semgrep/semgrep:1.183.0
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Scan source code
+        run: semgrep scan --config=auto --metrics=off --json --output=semgrep.json .
+
+      - name: Upload findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: semgrep-findings
+          path: semgrep.json
+          if-no-files-found: warn
+          retention-days: 7
+
+  trivy:
+    name: Trivy (dependencies, configuration, secrets)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Scan repository filesystem
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,misconfig,secret
+          format: json
+          output: trivy.json
+          exit-code: '0'
+
+      - name: Upload findings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-findings
+          path: trivy.json
+          if-no-files-found: warn
+          retention-days: 7
