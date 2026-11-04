@@ -25,7 +25,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
 
       - name: Scan source code
-        run: semgrep scan --config=auto --metrics=off --json --output=semgrep.json .
+        run: semgrep scan --config=p/default --metrics=off --json --output=semgrep.json .
 
       - name: Upload findings
         if: always()
