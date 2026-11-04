@@ -27,6 +27,10 @@ jobs:
       - name: Scan source code
         run: semgrep scan --config=p/default --metrics=off --json --output=semgrep.json .
 
+      - name: Publish Semgrep findings to Actions summary
+        if: always()
+        run: python3 .github/scripts/security_report.py semgrep semgrep.json
+
       - name: Upload findings
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
@@ -53,6 +57,10 @@ jobs:
           format: json
           output: trivy.json
           exit-code: '0'
+
+      - name: Publish Trivy findings to Actions summary
+        if: always()
+        run: python3 .github/scripts/security_report.py trivy trivy.json
 
       - name: Upload findings
         if: always()
